@@ -1,4 +1,10 @@
-## rust-stealer
+## rust-stealer / Luca Stealer
+
+## Write Up's about the Stealer:
+- https://www.bleepingcomputer.com/news/security/source-code-for-rust-based-info-stealer-released-on-hacker-forums/
+- https://www.thetechoutlook.com/news/technology/security/info-stealer-lucas-releases-its-source-code-for-free-on-several-hacking-forums/
+- https://mondaydaily.com/source-code-for-rust-based-info-stealer-released-on-hacker-forums-28065.html
+- https://godir.co.uk/rust-infostealer-source-code-published-on-hacker-forums/
 
 # Functions:
 ### Wallet Stealer
