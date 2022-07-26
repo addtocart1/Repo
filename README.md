@@ -136,6 +136,10 @@
 - UPlay
 - Telegram
 
+- Simple Anti VM
+
+
+
 
 ## How to setup?
 https://xss.is/threads/69584/post-474637
