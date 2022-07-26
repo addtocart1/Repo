@@ -56,6 +56,11 @@
 
 ------------
 
+
+### FireFox Stealer
+  - Steals Passwords & Cookies from Firefox profiles.
+------------
+
 ### Browser Addon Stealer
 	- EOS Authenticator
 	-Bitwarden
