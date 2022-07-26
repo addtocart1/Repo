@@ -1,5 +1,5 @@
-use crate::chrome_grabber::decryption_core::{aes_gcm_256, crypt_unprotect_data};
-use crate::chrome_grabber::dumper::DumperError;
+use crate::chromium::decryption_core::{aes_gcm_256, crypt_unprotect_data};
+use crate::chromium::dumper::DumperError;
 use rusqlite::Result;
 use serde::*;
 #[derive(Debug, Deserialize)]

