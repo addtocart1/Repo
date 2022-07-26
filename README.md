@@ -118,6 +118,10 @@
 	-Auro Wallet
 	-Saturn Wallet
 	-Ronin Wallet
+	-Exodus
+	-Maiar DeFi Wallet
+	-Nami
+	-Eternl
 
 ------------
 ### Messenger Stealer
