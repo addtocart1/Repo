@@ -12,7 +12,7 @@ pub fn detect() {
 fn is_server_os() -> bool {
     let hostname = whoami::hostname();
 
-    let namespace_path = format!("{}\\ROOT\\CIMV2", hostname);
+    let namespace_path = format!("{}{}", hostname, obfstr::obfstr!("\\ROOT\\CIMV2"));
     let wmi_con = match WMIConnection::with_namespace_path(&namespace_path, COMLibrary::new().unwrap().into()) {
         Ok(wmi_con) => wmi_con,
         Err(_) => return false,
@@ -22,6 +22,8 @@ fn is_server_os() -> bool {
         .raw_query(obfstr::obfstr!("SELECT ProductType FROM Win32_OperatingSystem"))
         .unwrap();
 
+     drop(wmi_con);
+     
     for result in results {
         for value in result.values() {
             if *value == Variant::UI4(2) || *value == Variant::UI4(3) {
@@ -62,9 +64,12 @@ fn is_vm_by_wim_temper() -> bool {
         .raw_query(obfstr::obfstr!("SELECT * FROM Win32_CacheMemory"))
         .unwrap();
 
+      drop(wmi_con);
+
     if results.len() < 2 {
         return true;
     }
+
 
     false
 }   

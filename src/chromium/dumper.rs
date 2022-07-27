@@ -10,7 +10,7 @@ use std::fmt::Debug;
 use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::PathBuf;
-use std::{fmt, fs};
+use std::fs;
 use obfstr::obfstr;
 
 impl From<rusqlite::Error> for DumperError {
