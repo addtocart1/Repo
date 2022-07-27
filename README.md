@@ -142,7 +142,7 @@
 
 
 ## How to setup?
-https://xss.is/threads/69584/post-474637
+https://github.com/luca364/rust-stealer/wiki/Installation
 
 ## I need help setting it up
 
